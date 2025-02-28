@@ -181,3 +181,41 @@ plt.show()
 
 
 # %%
+experimental_df = pd.read_csv(r"C:\Users\austin\Downloads\all_he.csv")
+# %%
+# drop rows where hAge is nan
+experimental_df = experimental_df.dropna(subset=['hAge'])
+experimental_df = experimental_df.dropna(subset=['ki67_per_rr'])
+experimental_df = experimental_df.dropna(subset=['ki67_per_unit_length'])
+experimental_df = experimental_df.dropna(subset=['itgb4_mean'])
+# %%
+
+# Prepare data for prediction
+cols_to_drop = ['im_name', 'length_for_validation', 'hAge', 'Flag', 'Sample', 'mAge']
+experimental_X = experimental_df.drop(columns=[col for col in cols_to_drop if col in experimental_df.columns])
+experimental_X = experimental_X.dropna(axis=1)  # Drop columns with NaNs
+
+# Run the model on this data
+predicted_ages = reg.predict(experimental_X)
+
+# Add predictions to the dataframe
+experimental_df['predicted_age'] = predicted_ages
+
+# Calculate deltaAge (true age - predicted age)
+experimental_df['deltaAge'] = experimental_df['predicted_age'] - experimental_df['hAge']
+
+# Group by sample identifier
+sample_results = experimental_df.groupby('im_name').agg({
+    'hAge': 'first',
+    'predicted_age': 'mean',
+    'deltaAge': 'mean'
+}).reset_index()
+
+# Display results
+print("Sample-level age predictions:")
+print(sample_results.head())
+
+# %%
+# save new experimental_df to csv
+experimental_df.to_csv(r"C:\Users\austin\Downloads\all_he_with_predictions.csv", index=False)
+# %%
